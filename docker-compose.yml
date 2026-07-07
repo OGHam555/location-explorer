@@ -1,0 +1,39 @@
+services:
+  db:
+    # PostGISが最初からインストール済みの公式イメージを使う。
+    # 素のpostgresイメージ+手動インストールより、初期化スクリプトが
+    # 「CREATE EXTENSION」だけで済みシンプルになる。
+    image: postgis/postgis:16-3.4
+    container_name: location-explorer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # ホストからpsql等で直接接続して初期化状態を確認できるようにする。
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # 永続化。コンテナを再作成してもデータが消えないようにする。
+      - db_data:/var/lib/postgresql/data
+      # docker-entrypoint-initdb.d はPostgreSQL公式イメージの仕組みで、
+      # データボリュームが空の初回起動時のみ、ここに置かれた.sqlをファイル名順に自動実行する。
+      # 01(拡張有効化)→02(テーブル作成)→03(CSVインポート)の順序を保証するため連番にしている。
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      # シードCSVは初期化スクリプトとは別ディレクトリにマウントし、
+      # 「実行スクリプト」と「データ」の置き場所を分離する。
+      - ./db/seed:/seed:ro
+    healthcheck:
+      # 後続ステップで backend サービスが `depends_on: db: condition: service_healthy`
+      # を使えるようにするため、DBが実際に接続可能になったことを検知できるようにしておく。
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # backend (NestJS) / frontend (Next.js) サービスは、対応するコードを
+  # 実装した後続ステップで追加する。今の段階ではDB単体の起動とCSV自動
+  # インポートまでを確認する。
+
+volumes:
+  db_data:

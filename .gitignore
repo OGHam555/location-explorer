@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# environment variables (secrets)
+.env
+.env.local
+
+# build output
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# docker volumes are managed by compose, not files here
