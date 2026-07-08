@@ -31,9 +31,30 @@ services:
       timeout: 5s
       retries: 10
 
-  # backend (NestJS) / frontend (Next.js) サービスは、対応するコードを
-  # 実装した後続ステップで追加する。今の段階ではDB単体の起動とCSV自動
-  # インポートまでを確認する。
+  backend:
+    build:
+      context: ./backend
+    container_name: location-explorer-backend
+    restart: unless-stopped
+    environment:
+      # DB接続情報。docker-compose内部ではサービス名 "db" がホスト名として解決され、
+      # コンテナ間通信はホスト側にマッピングした POSTGRES_PORT ではなく常に内部の5432を使う。
+      DB_HOST: db
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      PORT: 3001
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      # CSVインポートを含むDB初期化が完了し、pg_isreadyが通ってから起動する。
+      # 初期化中に接続すると spots テーブル未作成でエラーになるため。
+      db:
+        condition: service_healthy
+
+  # frontend (Next.js) サービスは、対応するコードを実装した後続ステップで追加する。
 
 volumes:
   db_data:
