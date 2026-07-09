@@ -54,7 +54,24 @@ services:
       db:
         condition: service_healthy
 
-  # frontend (Next.js) サービスは、対応するコードを実装した後続ステップで追加する。
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # NEXT_PUBLIC_ 変数はビルド時にクライアントバンドルへ埋め込まれるため、
+        # environment ではなく build.args として渡す（Dockerfile側のARGと対応）。
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+    container_name: location-explorer-frontend
+    restart: unless-stopped
+    environment:
+      # next.config.js の rewrites() はサーバー起動時に評価されるため、
+      # こちらは通常のenvironmentでよい（ビルド時埋め込みのNEXT_PUBLIC_とは扱いが異なる）。
+      # docker-compose内部ではサービス名 "backend" がホスト名として解決される。
+      BACKEND_INTERNAL_URL: http://backend:3001
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
 
 volumes:
   db_data:
