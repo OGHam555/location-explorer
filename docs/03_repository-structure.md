@@ -10,6 +10,7 @@ location-explorer/
 ├── .env.example                # 環境変数のテンプレート（APIキー等）
 ├── .gitignore
 ├── README.md                   # 環境構築・実行手順・技術的判断
+├── docs/                       # 要件定義書・技術仕様書・本ファイル・Claude Code向けガイド
 │
 ├── frontend/                   # Next.js (App Router)
 ├── backend/                    # NestJS
@@ -43,11 +44,13 @@ frontend/
     │   └── Spinner.tsx         # ローディング表示
     │
     ├── hooks/                  # カスタムフック（状態・ロジック）
-    │   ├── useSpots.ts         # スポット取得ロジック
-    │   └── useGeocode.ts       # 住所取得（デバウンス含む）
+    │   ├── useSpots.ts         # スポット取得（デバウンス＋わずかな移動の間引き）
+    │   └── useGeocode.ts       # 住所取得（デバウンス＋わずかな移動の間引き）
     │
     ├── lib/                    # API通信・ユーティリティ
-    │   └── api.ts              # バックエンドへのリクエスト関数
+    │   ├── api.ts              # バックエンドへのリクエスト関数
+    │   ├── geo.ts              # 2点間の実距離計算（Haversine公式）・間引き閾値
+    │   └── categoryColors.ts   # カテゴリ→マーカー色のマッピング
     │
     └── types/                  # 型定義
         └── spot.ts             # Spot型など
@@ -58,8 +61,8 @@ frontend/
 
 - app/：ページとレイアウト。App Routerのルーティング単位。
 - components/：見た目の部品。機能ごとに分割し再利用性を高める。
-- hooks/：状態管理とロジックを画面から分離。デバウンスやAPI呼び出しの制御をここに集約。
-- lib/：バックエンドとの通信処理をまとめ、コンポーネントから通信の詳細を隠蔽。
+- hooks/：状態管理とロジックを画面から分離。デバウンス・わずかな移動の間引きなど、API呼び出しの制御をここに集約。
+- lib/：バックエンドとの通信処理・共通ユーティリティをまとめ、コンポーネントから詳細を隠蔽。
 - types/：フロント・バック間で共有するデータ型を定義。
 ---
 
@@ -113,7 +116,7 @@ db/
 │   └── 03_import_seed.sql      # CSVインポート＋location生成
 │
 └── seed/
-    └── spots.csv               # 提供されたシードデータ
+    └── landit_coding_test_seed.csv  # 提供されたシードデータ
 
 ```
 
@@ -143,6 +146,8 @@ DB / API / FE の3コンテナを定義・一括起動
 node_modules、.env などを除外
 README.md
 環境構築・実行手順・使用ライブラリと選定理由・工夫した点・今後の改善点
+docs/
+要件定義書・技術仕様書・本ファイル・Claude Code向けガイド（CLAUDE.md）
 
 ---
 

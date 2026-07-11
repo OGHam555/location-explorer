@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiError, fetchSpots } from '@/lib/api';
+import { distanceMeters, MOVE_THRESHOLD_METERS } from '@/lib/geo';
 import type { LatLng, Spot } from '@/types/spot';
 
 // スライダー操作中は radius が連続して変化するため、操作が落ち着いてから
@@ -19,8 +20,16 @@ export function useSpots(center: LatLng, radiusKm: number): UseSpotsResult {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const lastFetchedRef = useRef<{ center: LatLng; radiusKm: number } | null>(null);
 
   useEffect(() => {
+    const last = lastFetchedRef.current;
+    // 半径が変わっていなければ「わずかな移動」判定を適用する。半径が変わった場合は
+    // 同じ中心でも抽出範囲そのものが変わるため、距離に関わらず必ず再検索する。
+    if (last && last.radiusKm === radiusKm && distanceMeters(last.center, center) < MOVE_THRESHOLD_METERS) {
+      return;
+    }
+
     let cancelled = false;
     const controller = new AbortController();
     setLoading(true);
@@ -29,7 +38,9 @@ export function useSpots(center: LatLng, radiusKm: number): UseSpotsResult {
     const timer = setTimeout(() => {
       fetchSpots(center, radiusKm, controller.signal)
         .then((result) => {
-          if (!cancelled) setSpots(result);
+          if (cancelled) return;
+          lastFetchedRef.current = { center, radiusKm };
+          setSpots(result);
         })
         .catch((err: unknown) => {
           if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) return;
