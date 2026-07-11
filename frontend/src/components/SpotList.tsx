@@ -1,5 +1,6 @@
 import { getCategoryColor } from '@/lib/categoryColors';
-import type { Spot } from '@/types/spot';
+import { distanceMeters } from '@/lib/geo';
+import type { LatLng, Spot } from '@/types/spot';
 import { Spinner } from './Spinner';
 
 interface SpotListProps {
@@ -7,19 +8,29 @@ interface SpotListProps {
   loading: boolean;
   error: string | null;
   radiusKm: number;
+  center: LatLng;
 }
 
 // 地図と同じ spots 配列をそのままリスト表示するだけの見た目コンポーネント
 // （単一データソースによるFE連動）。カテゴリごとに分類し、マーカーと同じ色を
 // 見出しに添えることで、地図の色分けとリストを対応づけやすくする。
-function groupByCategory(spots: Spot[]): Map<string, Spot[]> {
-  const groups = new Map<string, Spot[]>();
+// カテゴリ内は中心点からの距離が近い順に並べる。
+function groupByCategory(spots: Spot[], center: LatLng): Map<string, (Spot & { distanceM: number })[]> {
+  const groups = new Map<string, (Spot & { distanceM: number })[]>();
   for (const spot of spots) {
+    const distanceM = distanceMeters(center, { lat: spot.lat, lng: spot.long });
     const list = groups.get(spot.category) ?? [];
-    list.push(spot);
+    list.push({ ...spot, distanceM });
     groups.set(spot.category, list);
   }
+  for (const list of groups.values()) {
+    list.sort((a, b) => a.distanceM - b.distanceM);
+  }
   return groups;
+}
+
+function formatDistance(distanceM: number): string {
+  return `${(distanceM / 1000).toFixed(1)}km`;
 }
 
 // リストが「なぜ」その件数・その内容で表示されているかをユーザーが判断できるよう、
@@ -33,7 +44,7 @@ function RadiusHeading({ radiusKm }: { radiusKm: number }) {
   );
 }
 
-export function SpotList({ spots, loading, error, radiusKm }: SpotListProps) {
+export function SpotList({ spots, loading, error, radiusKm, center }: SpotListProps) {
   if (loading) {
     return (
       <div>
@@ -66,7 +77,7 @@ export function SpotList({ spots, loading, error, radiusKm }: SpotListProps) {
     );
   }
 
-  const groups = groupByCategory(spots);
+  const groups = groupByCategory(spots, center);
 
   return (
     <div>
@@ -85,7 +96,10 @@ export function SpotList({ spots, loading, error, radiusKm }: SpotListProps) {
             <ul className="space-y-1.5">
               {categorySpots.map((spot) => (
                 <li key={spot.id} className="text-sm">
-                  <div className="font-medium text-gray-800">{spot.name}</div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-medium text-gray-800">{spot.name}</span>
+                    <span className="shrink-0 text-xs text-gray-400">{formatDistance(spot.distanceM)}</span>
+                  </div>
                   {spot.address && <div className="text-xs text-gray-400">{spot.address}</div>}
                 </li>
               ))}

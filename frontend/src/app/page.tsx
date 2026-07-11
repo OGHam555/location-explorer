@@ -56,7 +56,7 @@ export default function Home() {
         </div>
 
         <aside className="w-80 shrink-0 overflow-y-auto border-l border-gray-200 bg-white">
-          <SpotList spots={spots} loading={spotsLoading} error={spotsError} radiusKm={radiusKm} />
+          <SpotList spots={spots} loading={spotsLoading} error={spotsError} radiusKm={radiusKm} center={center} />
         </aside>
       </div>
     </main>
