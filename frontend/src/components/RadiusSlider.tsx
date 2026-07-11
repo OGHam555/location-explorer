@@ -13,7 +13,7 @@ export function RadiusSlider({ value, onChange, min = 10, max = 200 }: RadiusSli
     <div className="rounded-md bg-white/95 px-3 py-2 shadow">
       <div className="mb-1 flex items-center justify-between text-sm">
         <label htmlFor="radius-slider" className="font-medium text-gray-500">
-          検索半径
+          検索範囲
         </label>
         <span className="font-semibold text-gray-800">{value}km</span>
       </div>

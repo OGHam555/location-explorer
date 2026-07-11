@@ -37,9 +37,15 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          <MapView initialCenter={INITIAL_CENTER} spots={spots} onCenterChanged={handleCenterChanged} />
+          <MapView
+            initialCenter={INITIAL_CENTER}
+            center={center}
+            address={address}
+            spots={spots}
+            onCenterChanged={handleCenterChanged}
+          />
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3 sm:max-w-xs">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3 sm:max-w-md">
             <div className="pointer-events-auto">
               <AddressDisplay address={address} loading={addressLoading} error={addressError} />
             </div>
@@ -50,7 +56,7 @@ export default function Home() {
         </div>
 
         <aside className="w-80 shrink-0 overflow-y-auto border-l border-gray-200 bg-white">
-          <SpotList spots={spots} loading={spotsLoading} error={spotsError} />
+          <SpotList spots={spots} loading={spotsLoading} error={spotsError} radiusKm={radiusKm} />
         </aside>
       </div>
     </main>

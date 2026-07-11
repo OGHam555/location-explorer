@@ -7,6 +7,8 @@ import type { LatLng, Spot } from '@/types/spot';
 
 interface MapProps {
   initialCenter: LatLng;
+  center: LatLng;
+  address: string | null;
   spots: Spot[];
   onCenterChanged: (center: LatLng) => void;
 }
@@ -33,7 +35,7 @@ function buildMarkerIcon(color: string): google.maps.Symbol {
 // center propは初回描画時のみ使用し、以降はユーザーのドラッグ操作による
 // 地図自身の位置を正とする（Reactのstateへ書き戻して再度centerに渡すと
 // panTo同士がフィードバックし合うため、意図的に「初期値のみ制御」にしている）。
-export function MapView({ initialCenter, spots, onCenterChanged }: MapProps) {
+export function MapView({ initialCenter, center, address, spots, onCenterChanged }: MapProps) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
   });
@@ -78,6 +80,9 @@ export function MapView({ initialCenter, spots, onCenterChanged }: MapProps) {
           icon={buildMarkerIcon(getCategoryColor(spot.category))}
         />
       ))}
+      {/* 現在地点（住所表示中の中心座標）マーカー。スポットの色分けドットと見分けが
+          つくよう、あえてカスタムアイコンを付けず既定のピン形状のままにしている。 */}
+      <Marker position={center} title={address ?? undefined} zIndex={1000} />
     </GoogleMap>
   );
 }

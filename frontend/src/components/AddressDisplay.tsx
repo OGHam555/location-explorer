@@ -21,7 +21,7 @@ export function AddressDisplay({ address, loading, error }: AddressDisplayProps)
       ) : error ? (
         <span className="text-red-500">{error}</span>
       ) : (
-        <span className="truncate text-gray-800">{address ?? '住所が見つかりませんでした'}</span>
+        <span className="text-gray-800">{address ?? '住所が見つかりませんでした'}</span>
       )}
     </div>
   );

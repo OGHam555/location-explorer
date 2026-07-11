@@ -2,10 +2,23 @@ import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GeocodeCache } from './geocode.cache';
 
+interface GoogleAddressComponent {
+  long_name: string;
+  short_name: string;
+  types: string[];
+}
+
 interface GoogleGeocodeResponse {
   status: string;
-  results: Array<{ formatted_address: string }>;
+  results: Array<{
+    formatted_address: string;
+    address_components: GoogleAddressComponent[];
+  }>;
 }
+
+// 本プロジェクトのスポットは全国データのみ（海外スポットは存在しない）ため、
+// 地図を海外までパンして逆ジオコーディングした場合は詳細な住所を出さず「日本国外」とだけ表示する。
+const OUTSIDE_JAPAN_LABEL = '日本国外';
 
 @Injectable()
 export class GeocodeService {
@@ -63,6 +76,27 @@ export class GeocodeService {
       throw new BadGatewayException('住所の取得に失敗しました');
     }
 
-    return data.results[0]?.formatted_address ?? null;
+    const result = data.results[0];
+    if (!result) {
+      return null;
+    }
+
+    const countryComponent = result.address_components.find((component) =>
+      component.types.includes('country'),
+    );
+    if (countryComponent?.short_name !== 'JP') {
+      return OUTSIDE_JAPAN_LABEL;
+    }
+
+    return this.formatJapaneseAddress(result.formatted_address);
+  }
+
+  // Google側の formatted_address は「日本、〒157-0066 東京都世田谷区成城４丁目２７−１４」のように
+  // 国名・郵便番号を含むが、スポットは全国内データのみで国名表示は冗長、郵便番号もUI上不要なため取り除く。
+  private formatJapaneseAddress(formattedAddress: string): string {
+    return formattedAddress
+      .replace(/^日本、?\s*/, '')
+      .replace(/〒\d{3}-\d{4}\s*/, '')
+      .trim();
   }
 }
